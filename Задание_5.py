@@ -95,5 +95,4 @@ target_label = ttk.Label()
 target_label.pack()
 Button(text='Получить курс обмена к доллару',
        command=exchange).pack(pady=10, padx=10)
-
 root.mainloop()

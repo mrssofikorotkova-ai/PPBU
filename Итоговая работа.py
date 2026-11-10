@@ -4,53 +4,7 @@ from tkinter import messagebox as mb
 import requests
 from datetime import date, timedelta
 from tkcalendar import DateEntry # календарь
-
-#функция обновления названия (текста) криптовалюты
-def update_coin_label(*args):
-    code = coin_var.get().strip()
-    coin_label.config(text = coin_currencies.get(code,''))
-    lblrez.config(text=txt0)
-
-#функция обновления названия (текста) валюты
-def update_target_label(*args):
-    code = target_combobox.get()
-    target_label.config(text=currencies.get(code,''))
-    lblrez.config(text=txt0)
-
-#функция для расчета курса
-def exchange():
-    coin_code = coin_combobox.get().strip()
-    target_code = target_combobox.get().strip()
-    dtt = cal.get_date()
-    if coin_code and target_code:
-        #если в переменной не пустая строка, то будет выполняться следующее условие
-        #если нет, то на шаг else
-        try:
-            if dtt == date.today(): #если дата = сегодня
-                response = requests.get(f"https://api.coingecko.com/api/v3/simple/price?ids={coin_code},ethereum,solana&vs_currencies={target_code}")
-                response.raise_for_status()
-                data = response.json()
-                data = data[coin_code]
-            else:
-                response = requests.get(f'https://api.coingecko.com/api/v3/coins/{coin_code}/history?date={dtt.strftime('%d-%m-%Y')}')
-                response.raise_for_status()
-                data = response.json().get("market_data") #json библиотеки response
-                data = data['current_price']
-            if target_code in data:
-                exchange_rate = data[target_code]
-                coin = coin_currencies[coin_code]
-                target = currencies[target_code]
-                rez = f'Курс на дату {dtt.strftime('%d.%m.%Y')}: \n\n За 1 {coin}\n\n{exchange_rate:.1f} {target}  '
-                lblrez.config(
-                text=f' Курс: \n За 1 {coin}\n{exchange_rate:.1f} {target}  ')
-                mb.showinfo('Курс обмена на дату',rez)
-            else:
-                mb.showerror('Ошибка',f'Валюта {target_code} не найдена')
-        except Exception as er:
-            mb.showerror('Ошибка', er)
-    else:
-        mb.showwarning('Внимание', 'Введите код валюты')
-
+from tkinter import scrolledtext
 
 #создание справочника кодов криптовалют
 coin_currencies = {
@@ -68,6 +22,72 @@ currencies = {
     'cny': 'Китайский юань',
     'cad': 'Канадский доллар'
 }
+f_txt = ''
+#функция обновления названия (текста) криптовалюты
+def update_coin_label(*args):
+    code = coin_var.get().strip()
+    global f_txt
+    cl = coin_label.config(text = coin_currencies.get(code,''))
+    if cl == None:
+        f_txt = ''
+    lblrez.config(text=txt0)
+
+#функция обновления названия (текста) валюты
+def update_target_label(*args):
+    code = target_combobox.get()
+    global f_txt
+    tl = target_label.config(text=currencies.get(code,''))
+    if tl == None:
+        f_txt = ''
+    lblrez.config(text=txt0)
+
+#функция для расчета курса
+def exchange():
+    coin_code = coin_combobox.get().strip()
+    target_code = target_combobox.get().strip()
+    dtt = cal.get_date()
+    global f_txt
+    if coin_code and target_code:
+        #если в переменной не пустая строка, то будет выполняться следующее условие
+        #если нет, то на шаг else
+        try:
+            if dtt == date.today(): #если дата = сегодня
+                response = requests.get(f"https://api.coingecko.com/api/v3/simple/price?ids={coin_code}&vs_currencies={target_code}")
+                response.raise_for_status()
+                data = response.json()
+                data = data[coin_code]
+            else:
+                response = requests.get(f'https://api.coingecko.com/api/v3/coins/{coin_code}/history?date={dtt.strftime('%d-%m-%Y')}')
+                response.raise_for_status()
+                data = response.json().get("market_data") #json библиотеки response
+                data = data['current_price']
+            if target_code in data:
+                exchange_rate = data[target_code]
+                coin = coin_currencies[coin_code]
+                target = currencies[target_code]
+                f_txt = f'Курс на дату {dtt.strftime('%d.%m.%Y')}:\n\n За 1 {coin}\n\n{exchange_rate:.1f} {target}'
+                lblrez.config(
+                text=f' Курс:\n\n За 1 {coin}\n\n{exchange_rate:.1f} {target}')
+                mb.showinfo('Курс обмена на дату',f_txt)
+            else:
+                mb.showerror('Ошибка',f'Валюта {target_code} не найдена')
+        except Exception as er:
+            mb.showerror('Ошибка', er)
+    else:
+        mb.showwarning('Внимание', 'Введите код валюты')
+
+#функция для записи данных в файл
+def f_rates():
+    global f_txt
+    print (f_txt)
+    if f_txt != '':
+        with open('rate_coin.txt', 'a', encoding='utf-8') as f:
+            print(f_txt)
+            f_txt = f_txt.replace('\n',' ')
+            f.write(f'{f_txt}\n')
+        mb.showinfo('Сообщение','Данные записаны')
+    else:
+        mb.showinfo('Ошибка', f'Нет данных по курсу для записи')
 
 root = Tk()
 root.title('Курс обмена криптовалют к валюте')
@@ -116,10 +136,10 @@ btn1= Button(framebt, text = 'Получить курс обмена к валю
        command = exchange)
 btn1.grid(row = 0, column = 0, padx = 5, pady =0)
 
-btn2 = Button(framebt, text = 'Записать результат в файл')
+btn2 = Button(framebt, text = 'Записать результат в файл', command = f_rates)
 btn2.grid(row = 0, column = 1, padx = 5, pady =0)
 
-btn3 = Button(framebt, text = 'Отправить результат на почту')
+btn3 = Button(framebt, text = 'Открыть файл с курсами', )
 btn3.grid(row = 0, column = 2, padx = 5, pady =0)
 
 txt0 = 'Здесь отобразится результат действия'

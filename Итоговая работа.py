@@ -88,6 +88,26 @@ def f_rates():
         mb.showinfo('Сообщение','Данные записаны')
     else:
         mb.showinfo('Ошибка', f'Нет данных по курсу для записи')
+#Функция отображения данных в окне
+def show_in_window(text):
+    root1 = Tk()
+    root1.title("Содержимое файла rate_coin.txt")
+    root1.geometry("400x400")
+    # Виджет с прокруткой для большого текста
+    text_area = scrolledtext.ScrolledText(root1, wrap=WORD, font=("Arial", 10))
+    text_area.pack(fill=BOTH, expand=True, padx=10, pady=10)
+    text_area.insert(END, text)
+    text_area.config(state=DISABLED)  # Чтобы нельзя было редактировать
+    root1.mainloop()
+
+# Функция чтение файла
+def f_r_rates():
+
+    file_path = 'rate_coin.txt'
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    # Показ в окне
+    show_in_window(content)
 
 root = Tk()
 root.title('Курс обмена криптовалют к валюте')
